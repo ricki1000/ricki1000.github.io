@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <title>Air Pollution Live</title>
+    <link rel=icon href="data:;base64,=" />
+    <meta charset=utf-8 />
+    <meta name=viewport content="width=device-width, initial-scale=1" />
+    <meta name=description content="Get the latest air pollution values live near you - check the current air outdoors quality index today for your location and get safety and health information" />
+    <meta name="referrer" content="no-referrer" />
+    <link rel="canonical" href="https://airpollution.live">
+
+    <script type="text/javascript">
+    window.onload = function() {
+      var ts = ['ÏÈËËÉÏÎÌÎÈÉÏËÈÉÏ', 'ÉÈÏÎÏÌÏÉÉÎËÏÈ', 'ÈÉÈÎÏÈÉÉÎÏÌÌÈÎ', 'ÌÏËÌÌÎÏËÉÏÏËÏÎ', 'ÏÉÌÎÈÌÎÎÎÏÌÉÌÎÎÉ', 'ÈÈÎËÉÈËÈÈËÌÈÎÏÌÏÉË', 'ÉÌÎÎÏÌÎÎÉÉÈËÏÉÈÉ', 'ÏÈÈÈÏËÌÎÏËÏ', 'ÌËÉÎÌÉËÏÉÈÉÎÏÏË', 'ÏËÈÈÈÌËÉÌÈÈÉÉ'],
+      ls = [
+        {
+          min: 0,
+          max:  50,
+          title: 'good',
+          msg: 'Air quality is considered satisfactory, and air pollution poses little or no risk.',
+        }, {
+          min: 51,
+          max: 100,
+          title: 'poor',
+          msg: 'Air quality is poor, but acceptable; for some pollutants there may be a moderate health concern for a very small number of people who are unusually sensitive to air pollution.',
+          warning: 'Active children and adults, and people with respiratory disease, such as asthma, should limit prolonged outdoor exertion.'
+        }, {
+          min: 101,
+          max: 150,
+          title: 'unhealthy for some',
+          msg: 'Members of sensitive groups may experience health effects. The general public is not likely to be affected.',
+          warning: 'Active children and adults, and people with respiratory disease, such as asthma, should limit prolonged outdoor exertion.'
+        }, {
+          min: 151,
+          max: 200,
+          title: 'unhealthy',
+          msg: 'Everyone may begin to experience health effects; members of sensitive groups may experience more serious health effects.',
+          warning: 'Active children and adults, and people with respiratory disease, such as asthma, should avoid prolonged outdoor exertion; everyone else, especially children, should limit prolonged outdoor exertion.'
+        }, {
+          min: 201,
+          max: 300,
+          title: 'very unhealthy',
+          msg: 'Health warnings of emergency conditions. The entire population is more likely to be affected.',
+          warning: 'Active children and adults, and people with respiratory disease, such as asthma, should avoid all outdoor exertion; everyone else, especially children, should limit outdoor exertion.'
+        }, {
+          min: 300,
+          title: 'hazardous',
+          msg: 'Health alert: everyone may experience more serious health effects.',
+          warning: 'Everyone should avoid all outdoor exertion.'
+        }
+      ],
+      lookupSuccess = function(aqi, city, iaqi, attributions) {
+        var level = null,
+            i;
+        for (i = 0; i < ls.length; ++i) {
+          if (i == ls.length - 1 || ls[i].min < aqi && aqi < ls[i].max) {
+            level = level || ls[i];
+          }
+        }
+
+        document.getElementById('location_string').innerText = city.name;
+        document.getElementById('location_string').href = 'https://www.google.pt/maps/@' + city.geo[0] + ',' + city.geo[1] + ',15z';
+        document.getElementById('value').innerText = aqi + ' AQI';
+        document.getElementById('title').innerText = level.title;
+        document.getElementById('msg').innerText = level.msg;
+        document.getElementById('warning').innerText = level.warning || '';
+
+        if (aqi > 200) {
+          document.getElementById('title').classList.add('panic');
+          document.getElementById('msg').classList.add('panic');
+          document.getElementById('warning').classList.add('panic');
+        }
+
+        document.getElementById('location-in-progress').classList.add('hidden');
+        document.getElementById('location-success').classList.remove('hidden');
+
+        try {
+          var so2 = iaqi.so2.v,
+          no2 = iaqi.no2.v,
+          o3 = iaqi.o3.v,
+          pm10 = iaqi.pm10.v,
+          pm25 = iaqi.pm25.v;
+          document.getElementById('s_so2').innerText = so2;
+          document.getElementById('s_no2').innerText = no2;
+          document.getElementById('s_o3').innerText = o3;
+          document.getElementById('s_co').innerText = o3;
+          document.getElementById('s_pm10').innerText = pm10;
+          document.getElementById('s_pm25').innerText = pm25;
+          document.getElementById('location-success2').classList.remove('hidden');
+        } catch(e) {}
+
+        if (attributions.length === 0) { return; }
+
+        try {
+          i = document.getElementById('attribution');
+          i.innerHTML = 'Source:<br/>' + attributions[0].name;
+          i.classList.remove('hidden');
+        } catch(e) {};
+      },
+      lookupFailed = function() {
+        document.getElementById('location_string').innerText = 'unknown';
+        document.getElementById('location-in-progress').classList.add('hidden');
+        document.getElementById('location-failed').classList.remove('hidden');
+      };
+
+      try {
+        var xhr = new XMLHttpRequest();
+        xhr.open('GET', (window.location.protocol == 'https:' ? 'https:' : 'http:') + '//api.waqi.info/feed/here/?token=' + ts[Date.now() % ts.length].split('').map(c => String.fromCharCode(c.charCodeAt(0) ^ 170)).join(''));
+        xhr.onload = function() {
+          if (xhr.status === 200) {
+            try {
+              var resp = JSON.parse(xhr.response);
+
+              lookupSuccess(resp.data.aqi, resp.data.city, resp.data.iaqi, resp.data.attributions);
+            } catch (e) {
+              lookupFailed();
+            }
+          } else {
+            lookupFailed();
+          }
+        };
+        xhr.send();
+      } catch (e) {
+        lookupFailed();
+      }
+    };
+    </script>
+    <style type="text/css">
+  html {
+    color: #000;
+    background-color: #fff;
+  }
+  body,p {
+    font-family: Menlo,Monaco,Lucida Console,Liberation Mono,DejaVu Sans Mono,Bitstream Vera Sans Mono,monospace
+  }
+  body {
+    margin-left: auto;
+    margin-right: auto;
+    padding: 1rem;
+    max-width: 630px;
+    line-height: 1.5;
+  }
+  h1 {
+    font-family: sans-serif;
+    font-weight: normal;
+    text-align: center;
+  }
+  a {
+    color: #00f;
+    background-color: #fff;
+  }
+  p {
+    margin-top: 2rem;
+  }
+  .hidden {
+    display: none;
+  }
+  .sources {
+    color: gray;
+    font-size: small;
+  }
+  .panic {
+    font-weight: bold;
+  }
+  p.foot {
+    text-align: center;
+    margin: 60px 0;
+  }
+  p.warning-box {
+    background-color: #ffdce0;
+    padding: 10px 16px;
+    border: 1px solid #d73a49;
+    border-radius: 3px;
+  }
+  .info-box {
+    background-color: #f5f0ff;
+    padding: 10px 16px;
+    border: 1px solid #6f42c1;
+    border-radius: 3px;
+  }
+  span.detail {
+    font-weight: bold;
+    color: darkorange
+  }
+  span.heart {
+     color: lightgreen;
+     font-size: large;
+  }
+  #location-success2 {
+    padding: 20px 0;
+  }
+  #location-success2 > p {
+    margin: 14px 0;
+  }
+  .detail2 {
+    text-decoration: underline;
+    text-decoration-color: darkorange;
+  }
+    </style>
+  <!-- Global site tag (gtag.js) - Google Analytics -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=UA-135102497-2"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+
+    gtag('config', 'UA-135102497-2');
+  </script>
+
+  </head>
+  <body>
+    <h1>Air Pollution<span class="detail">.</span>Live</h1>
+
+    <div id="location-success" class="hidden">
+    <p>Your closest air quality station is in <a target="_blank" id="location_string"></a>.</p>
+
+    <p class="info-box">The latest estimate for air quality in your area is <span class="detail" id="value"></span>. <b>This means air quality is <span id="title"></span>.</b></p>
+    <p id="msg"></p>
+    <p id="warning"></p>
+    </div>
+
+    <div id="location-in-progress">
+      <p>Finding out your location...</p>
+    </div>
+
+    <div id="location-failed" class="hidden">
+      <p>Location lookup failed.</p>
+
+      <p>We're unable to determine your location and/or the pollution levels for your location. Please refresh the page and try again. If this persists please contact us with the email bellow.</p>
+    </div>
+
+    <br/>
+
+    <h3>What is air pollution?</h3>
+    <p>Air pollution is a mix of particles and gases that can reach harmful concentrations both outside and indoors. Its effects can range from higher disease risks to rising temperatures. Soot, smoke, mold, pollen, methane, and carbon dioxide are just a few examples of common pollutants.</p>
+
+    <p class="warning-box">The World Health Organization (WHO) says 4.2 million people die every year as a result of exposure to ambient (outdoor) air pollution, 3.8 million people die from indoors exposure and 91% of the world population lives in places where air quality exceeds WHO guideline limits. (2019)<p/>
+
+    <p>One of the most common measures of outdoor air pollution is the Air Quality Index (AQI), which rates air conditions based on concentrations of five major pollutants: <span class="detail2">ground-level ozone</span>, <span class="detail2">particle pollution</span> (or particulate matter), <span class="detail2">carbon monoxide</span>, <span class="detail2">sulfur dioxide</span>, and <span class="detail2">nitrogen dioxide</span>. These are often accompanied with other harmful substances, like nitrogen oxides (NOx), radon, cigarette smoke, volatile organic compounds (VOCs), formaldehyde, asbestos, and other substances.</p>
+
+    <div id="location-success2" class="hidden">
+      <b>Detailed air quality for your location:</b>
+
+      <p><span class="detail2">Ozone</span> &mdash; <span class="detail" id="s_o3"></span><br/>
+        Breathing ozone causes chest pains, coughing, throat irritation, and airway inflammation. It also can reduce lung function and harm lung tissue.</p>
+      <p><span class="detail2">Particulate matter PM2.5/10</span> &mdash; <span class="detail" id="s_pm25"></span>/<span class="detail" id="s_pm10"></span><br/>
+        Tiny particles are able to bypass the nose and throat and penetrate deep into the lungs and circulatory system, causing asthma, heart attack, bronchitis and other respiratory problems.</p>
+      <p><span class="detail2">Carbon monoxide</span> &mdash; <span class="detail" id="s_co"></span><br/>
+        Breathing carbon monoxide causes headaches, dizziness, nausea and shortness of breath. Long term effects include heart and lung disease.</p>
+      <p><span class="detail2">Sulfur dioxide</span> &mdash; <span class="detail" id="s_so2"></span><br/>
+        Sulfur dioxide irritates the nose, throat, and airways to cause coughing, wheezing, shortness of breath, or a tight feeling around the chest. People with asthma are particularly sensitive.</p>
+      <p><span class="detail2">Nitrogen dioxide</span> &mdash; <span class="detail" id="s_no2"></span><br/>
+        One of the parts of NOx, nitrogen dioxides help form smog, acid rain, ground level ozone and particulate matter. They cause inflammation, decreased lung function, increased allergic reactions and other respiratory conditions.</p>
+      <p><i>All values are normalized indexes. Lower is better.</i></p>
+    </div>
+
+    <h3>How can I improve air quality around me?</h3>
+    <p>By making more environmentally conscious decisions we can improve the environment around us. You can also spread the word to raise awareness about air pollution and push businesses and decision makers to improve on polluting practices.</p>
+    <p>In the meanwhile, if you or your loved ones are at risk, and moving some place else with better air quality is not possible, you may consider limiting exertion on more polluted days, wearing a mask when outside and using an air purifier while indoors.<p/>
+
+    <p class="foot">Made with <span alt="love" title="love" class="heart">&hearts;</span> from Portugal &middot; <a href="mailto:wiselk85@gmail.com">Contact</a></p>
+
+    <div id="attribution" class="sources hidden"></div>
+  </body>
+</html>
